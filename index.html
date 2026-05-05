@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=850, user-scalable=no">
+    <title>Pioneer DEH-P620 Elite</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <style>
+        /* 指定のカラー #1F76AE に変更 */
+        :root { --lcd-blue: #1F76AE; }
+        body {
+            background-color: #000; margin: 0;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* メイン筐体 */
+        #p620-player {
+            position: relative; width: 850px; height: 310px;
+            background: #000; flex-shrink: 0;
+        }
+
+        /* レイヤー構造 */
+        .layer { position: absolute; background-size: 100% 100%; background-repeat: no-repeat; }
+        #screen-bg      { z-index: 10; }
+        #startup-layer  { z-index: 70; }
+        #body-overlay   { z-index: 80; pointer-events: none; }
+
+        /* テキスト表示 */
+        .info-text {
+            position: absolute; z-index: 40; color: var(--lcd-blue);
+            text-shadow: 0 0 10px rgba(31, 118, 174, 0.8);
+            white-space: nowrap; 
+            font-family: 'DotGothic16', sans-serif; 
+            font-weight: normal; 
+            transform-origin: top left; pointer-events: none; line-height: 1;
+        }
+
+        /* タイトルのコンテナ設定 */
+        #title-container {
+            position: absolute;
+            z-index: 41;
+            overflow: hidden; 
+            pointer-events: none;
+        }
+
+        #track-title {
+            position: relative;
+            display: inline-block;
+            left: 0;
+        }
+
+        /* 操作ボタン */
+        .btn { position: absolute; z-index: 90; cursor: pointer; background: transparent; border: none; }
+        .btn:active { background: rgba(31, 118, 174, 0.2); }
+
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="p620-player">
+    <div id="screen-bg" class="layer"></div>
+    
+    <div id="title-container">
+        <div id="track-title" class="info-text">NO DATA</div>
+    </div>
+    
+    <div id="track-time"  class="info-text">00' 00"</div>
+    <div id="track-num"   class="info-text">00</div>
+
+    <div id="startup-layer" class="layer"></div>
+    <div id="body-overlay" class="layer"></div>
+
+    <div id="btn-src" class="btn" title="SOURCE"></div>
+    <div id="btn-list" class="btn" title="LIST"></div>
+    <div id="btn-esc" class="btn" title="BAND/ESC"></div>
+    <div id="btn-up" class="btn" title="VOL UP"></div>
+    <div id="btn-down" class="btn" title="VOL DOWN"></div>
+    <div id="btn-left" class="btn" title="PREV"></div>
+    <div id="btn-right" class="btn" title="NEXT"></div>
+    <div id="btn-center" class="btn" title="PLAY/PAUSE"></div>
+    <div id="btn-p1" class="btn"></div>
+    <div id="btn-p2" class="btn"></div>
+    <div id="btn-p3" class="btn"></div>
+    <div id="btn-p4" class="btn"></div>
+    <div id="btn-open" class="btn" title="OPEN"></div>
+</div>
+
+<input type="file" id="file-input" webkitdirectory directory>
+
+<script>
+    const sfx = {
+        up: new Audio('up.mp3'),
+        down: new Audio('down.mp3'),
+        ok: new Audio('ok.mp3'),
+        none: new Audio('none.mp3')
+    };
+
+    function playSFX(key) {
+        if (sfx[key]) {
+            sfx[key].currentTime = 0;
+            sfx[key].play().catch(() => {});
+        }
+    }
+
+    const config = {
+        "master": {"w": 850, "h": 310},
+        "body": {"x": -100, "y": 0, "w": 1069, "h": 310},
+        "screen": {"x": -100, "y": 0, "w": 1080, "h": 310},
+        "startup": {"x": -100, "y": 0, "w": 1080, "h": 310},
+        "title": {"x": 476, "y": 142, "w": 280, "h": 30},
+        "time": {"x": 659, "y": 176, "w": 101, "h": 36},
+        "num": {"x": 726, "y": 112, "w": 80, "h": 18},
+        "src": {"x": -55, "y": 47, "w": 80, "h": 59},
+        "list": {"x": 20, "y": 140, "w": 45, "h": 35},
+        "esc": {"x": -55, "y": 214, "w": 80, "h": 61},
+        "up": {"x": 184, "y": 50, "w": 75, "h": 48},
+        "down": {"x": 184, "y": 224, "w": 80, "h": 51},
+        "left": {"x": 107, "y": 115, "w": 55, "h": 89},
+        "right": {"x": 283, "y": 115, "w": 55, "h": 92},
+        "center": {"x": 184, "y": 124, "w": 70, "h": 69},
+        "p1": {"x": 410, "y": 263, "w": 40, "h": 20},
+        "p2": {"x": 499, "y": 263, "w": 40, "h": 20},
+        "p3": {"x": 593, "y": 260, "w": 40, "h": 20},
+        "p4": {"x": 687, "y": 260, "w": 40, "h": 20},
+        "open": {"x": 810, "y": 260, "w": 50, "h": 20}
+    };
+
+    const audio = new Audio();
+    let playlist = [];
+    let currentIndex = 0;
+    
+    let scrollInterval = null;
+    let scrollTimeout = null;
+    let originalTitle = "NO DATA";
+
+    function initLayout() {
+        setupEl('screen-bg', 'screen', 'screen.png');
+        setupEl('startup-layer', 'startup', 'carrozzeria.png');
+        setupEl('body-overlay', 'body', 'body.png');
+        setupText('track-title', 'title');
+        setupText('track-time', 'time');
+        setupText('track-num', 'num');
+        
+        const tCon = document.getElementById('title-container');
+        tCon.style.left = config.title.x + 'px';
+        tCon.style.top = config.title.y + 'px';
+        tCon.style.width = config.title.w + 'px';
+        tCon.style.height = config.title.h + 'px';
+
+        Object.keys(config).forEach(key => {
+            const btn = document.getElementById('btn-' + key);
+            if (btn) {
+                const c = config[key];
+                btn.style.left = c.x + 'px';
+                btn.style.top = c.y + 'px';
+                btn.style.width = c.w + 'px';
+                btn.style.height = c.h + 'px';
+            }
+        });
+    }
+
+    function setupEl(id, cfgKey, img) {
+        const el = document.getElementById(id);
+        const c = config[cfgKey];
+        el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+        el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
+        if (img) el.style.backgroundImage = `url('${img}')`;
+    }
+
+    function setupText(id, cfgKey) {
+        const el = document.getElementById(id);
+        const c = config[cfgKey];
+        if(id !== 'track-title') {
+            el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+        }
+        el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
+        el.style.fontSize = c.h + 'px';
+        
+        if(id !== 'track-title') {
+            setTimeout(() => {
+                const scaleX = c.w / el.scrollWidth;
+                el.style.transform = `scaleX(${scaleX})`;
+            }, 50);
+        }
+    }
+
+    function startTitleScroll() {
+        const el = document.getElementById('track-title');
+        const containerWidth = config.title.w;
+        
+        clearInterval(scrollInterval);
+        clearTimeout(scrollTimeout);
+
+        // 表示を一旦リセット
+        el.innerText = originalTitle;
+        el.style.left = '0px';
+
+        // 3秒待機してから計測と移動を開始
+        scrollTimeout = setTimeout(() => {
+            const singleTextWidth = el.scrollWidth;
+            
+            if (singleTextWidth > containerWidth) {
+                const spacer = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"; // 間隔
+                el.innerText = originalTitle + spacer + originalTitle + spacer;
+                
+                // 正確なリセット位置を算出（テキスト1個分 + スペース分）
+                // 隠し要素を作ってスペースの幅を正確に測る
+                const temp = document.createElement('span');
+                temp.style.fontFamily = "'DotGothic16', sans-serif";
+                temp.style.fontSize = config.title.h + 'px';
+                temp.style.visibility = 'hidden';
+                temp.innerText = spacer;
+                document.body.appendChild(temp);
+                const spacerWidth = temp.offsetWidth;
+                document.body.removeChild(temp);
+
+                const resetPoint = singleTextWidth + spacerWidth;
+                let currentPos = 0;
+
+                scrollInterval = setInterval(() => {
+                    currentPos -= 10;
+                    
+                    // 10px刻みで、リセットポイントを超えたらピタッと0に戻して再待機
+                    if (Math.abs(currentPos) >= resetPoint) {
+                        currentPos = 0;
+                        el.style.left = '0px';
+                        clearInterval(scrollInterval);
+                        startTitleScroll(); // 再度3秒待機からやり直し
+                    } else {
+                        el.style.left = currentPos + 'px';
+                    }
+                }, 200);
+            }
+        }, 3000);
+    }
+
+    window.onload = () => {
+        initLayout();
+        setTimeout(() => {
+            document.getElementById('startup-layer').style.display = 'none';
+        }, 5000);
+    };
+
+    function playTrack(index) {
+        if (!playlist[index]) return;
+        const file = playlist[index];
+        audio.src = URL.createObjectURL(file);
+        document.getElementById('track-num').innerText = (index + 1).toString().padStart(2, '0');
+        setupText('track-num', 'num');
+        
+        jsmediatags.read(file, {
+            onSuccess: (tag) => {
+                const title = tag.tags.title || file.name;
+                originalTitle = title.toUpperCase();
+                startTitleScroll();
+            },
+            onError: () => {
+                originalTitle = file.name.toUpperCase();
+                startTitleScroll();
+            }
+        });
+        audio.play();
+    }
+
+    document.getElementById('btn-src').onclick = () => playSFX('none');
+    document.getElementById('btn-list').onclick = () => playSFX('none');
+    document.getElementById('btn-esc').onclick = () => playSFX('none');
+
+    document.getElementById('btn-open').onclick = () => {
+        playSFX('ok');
+        document.getElementById('file-input').click();
+    }
+
+    document.getElementById('file-input').onchange = (e) => {
+        playlist = Array.from(e.target.files).filter(f => f.name.match(/\.(mp3|m4a|aac)$/i));
+        if (playlist.length > 0) { currentIndex = 0; playTrack(0); }
+    };
+
+    const toggle = () => {
+        playSFX('ok');
+        audio.paused ? audio.play() : audio.pause();
+    }
+    document.getElementById('btn-center').onclick = toggle;
+    document.getElementById('btn-p1').onclick = toggle;
+
+    document.getElementById('btn-p2').onclick = () => playSFX('none');
+    document.getElementById('btn-p3').onclick = () => playSFX('none');
+    document.getElementById('btn-p4').onclick = () => playSFX('none');
+
+    document.getElementById('btn-right').onclick = () => { 
+        playSFX('up');
+        if(playlist.length === 0) return;
+        currentIndex = (currentIndex + 1) % playlist.length; 
+        playTrack(currentIndex); 
+    };
+    document.getElementById('btn-left').onclick = () => { 
+        playSFX('down');
+        if(playlist.length === 0) return;
+        currentIndex = (currentIndex - 1 + playlist.length) % playlist.length; 
+        playTrack(currentIndex); 
+    };
+
+    document.getElementById('btn-up').onclick = () => { 
+        playSFX('up');
+        audio.volume = Math.min(1, audio.volume + 0.1); 
+    };
+    document.getElementById('btn-down').onclick = () => { 
+        playSFX('down');
+        audio.volume = Math.max(0, audio.volume - 0.1); 
+    };
+
+    audio.ontimeupdate = () => {
+        const m = Math.floor(audio.currentTime / 60);
+        const s = Math.floor(audio.currentTime % 60);
+        const el = document.getElementById('track-time');
+        el.innerText = `${m.toString().padStart(2, '0')}' ${s.toString().padStart(2, '0')}"`;
+        const c = config['time'];
+        const scaleX = c.w / el.scrollWidth;
+        el.style.transform = `scaleX(${scaleX})`;
+    };
+</script>
+</body>
+</html>
