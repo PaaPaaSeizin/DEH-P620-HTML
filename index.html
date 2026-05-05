@@ -37,51 +37,37 @@
             transform-origin: top left; pointer-events: none; line-height: 1;
         }
 
-/* 時間（Time）：左右の線を極太に ＋ 極限の横圧縮 */
+        /* 時間（Time）：指定サイズ固定 ＋ 横位置-9px修正 */
         #track-time {
-            font-family: 'Michroma', sans-serif;
-            color: #1d6fa3; 
+            font-family: 'Michroma', sans-serif !important;
+            color: #1d6fa3 !important; 
             -webkit-font-smoothing: none;
             -moz-osx-font-smoothing: grayscale;
 
-            /* 左右に「1.2px」の固い影を配置して、縦線を物理的に太らせる */
-            /* 上下の影を削ることで、スッキリさせつつ横幅のボリュームを強調 */
+            /* 左右に「1.6px」の固い影を配置 */
             text-shadow: 
                 1.6px 0 0 #1d6fa3, 
                 -1.6px 0 0 #1d6fa3,
                 0.6px 0 0 #1d6fa3,
                 -0.6px 0 0 #1d6fa3,
-                0 0 2px rgba(29, 111, 163, 0.3);
+                0 0 2px rgba(29, 111, 163, 0.3) !important;
             
-            /* 文字が太くなった分、重なりを防ぐために間隔を調整 */
-            letter-spacing: -1.4px; 
+            /* スペース維持と間隔固定 */
+            white-space: pre !important;
+            letter-spacing: 0px !important; 
 
-            /* 横圧縮をさらに追い込み (0.65倍) */
-            /* これにより、太い線が密集して「緻密なセグメント感」が出ます */
-            transform: scaleX(0.65) scaleY(1.15);
-            
-            filter: brightness(0.95) contrast(1.2);
-        }
-
-        /* トラック番号（Num）は前回の「横にどっしり」を維持 */
-        #track-num {
-            font-family: 'Michroma', sans-serif;
-            color: #1d6fa3; 
-            -webkit-font-smoothing: none;
-            -moz-osx-font-smoothing: grayscale;
-
-            text-shadow: 
-                1.2px 0 0 #1d6fa3, 
-                -1.2px 0 0 #1d6fa3,
-                0 0 3px rgba(29, 111, 163, 0.3);
-            
-            letter-spacing: 1px; 
-            transform: scaleX(1.4) scaleY(1.1);
+            /* 指定のサイズと圧縮率を完全固定 */
+            left: 660px !important; /* 669px - 9px */
+            top: 176px !important;
+            width: 101px !important;
+            height: 36px !important;
+            font-size: 36px !important;
+            transform: scaleX(0.497537) !important;
             
             filter: brightness(0.95) contrast(1.2);
         }
 
-        /* トラック番号（Num）：横太 ＋ 同様のトーン調整 */
+        /* トラック番号（Num） */
         #track-num {
             font-family: 'Michroma', sans-serif;
             color: #1d6fa3; 
@@ -95,8 +81,6 @@
             
             letter-spacing: 1px; 
             transform: scaleX(1.4) scaleY(1.1);
-            
-            /* 時間側とトーンを統一 */
             filter: brightness(0.95) contrast(1.1);
         }
 
@@ -130,7 +114,7 @@
         <div id="track-title" class="info-text">SELECT MUSIC</div>
     </div>
     
-    <div id="track-time"  class="info-text">0&nbsp;0&nbsp;'&nbsp;&nbsp;0&nbsp;0&nbsp;"</div>
+    <div id="track-time"  class="info-text">0 0 '  0 0 "</div>
     <div id="track-num"   class="info-text">00</div>
 
     <div id="startup-layer" class="layer"></div>
@@ -173,8 +157,8 @@
         "body": {"x": -100, "y": 0, "w": 1079, "h": 310},
         "screen": {"x": -100, "y": 0, "w": 1090, "h": 310},
         "startup": {"x": -100, "y": 0, "w": 1090, "h": 310},
-        "title": {"x": 486, "y": 146, "w": 280, "h": 30},
-        "time": {"x": 669, "y": 176, "w": 101, "h": 36},
+        "title": {"x": 486, "y": 146, "w": 280, "h": 31},
+        "time": {"x": 660, "y": 176, "w": 101, "h": 36},
         "num": {"x": 732, "y": 112, "w": 80, "h": 18},
         "src": {"x": -55, "y": 47, "w": 80, "h": 59},
         "list": {"x": 25, "y": 140, "w": 45, "h": 35},
@@ -236,13 +220,15 @@
     function setupText(id, cfgKey) {
         const el = document.getElementById(id);
         const c = config[cfgKey];
-        if(id !== 'track-title') {
+        if(id !== 'track-title' && id !== 'track-time') {
             el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
         }
-        el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
-        el.style.fontSize = c.h + 'px';
+        if(id !== 'track-time') {
+            el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
+            el.style.fontSize = c.h + 'px';
+        }
         
-        if(id !== 'track-title') {
+        if(id !== 'track-title' && id !== 'track-time') {
             setTimeout(() => {
                 const scaleX = c.w / el.scrollWidth;
                 el.style.transform = `scaleX(${scaleX})`;
@@ -373,10 +359,13 @@
         const m = Math.floor(audio.currentTime / 60);
         const s = Math.floor(audio.currentTime % 60);
         const el = document.getElementById('track-time');
-        el.innerText = `${m.toString().padStart(2, '0')}' ${s.toString().padStart(2, '0')}"`;
-        const c = config['time'];
-        const scaleX = c.w / el.scrollWidth;
-        el.style.transform = `scaleX(${scaleX})`;
+        
+        // 常にスペースを含んだ「0 0 '  0 0 "」の形式で更新
+        const mt = m.toString().padStart(2, '0').split('');
+        const st = s.toString().padStart(2, '0').split('');
+        el.innerText = `${mt[0]} ${mt[1]} '  ${st[0]} ${st[1]} "`;
+        
+        // CSSで transform を固定しているため、ここでの計算は不要
     };
 </script>
 </body>
