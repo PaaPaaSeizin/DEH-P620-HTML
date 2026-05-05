@@ -367,6 +367,13 @@
         
         // CSSで transform を固定しているため、ここでの計算は不要
     };
+
+    // 再生終了時の処理
+    audio.onended = () => {
+        if(playlist.length === 0) return;
+        currentIndex = (currentIndex + 1) % playlist.length; 
+        playTrack(currentIndex);
+    };
 </script>
 </body>
 </html>
