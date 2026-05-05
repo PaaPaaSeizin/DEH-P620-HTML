@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=850, user-scalable=no">
     <title>Pioneer DEH-P620 HTML</title>
-    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Michroma&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <style>
         /* 指定のカラー #1F76AE に変更 */
@@ -27,7 +27,7 @@
         #startup-layer  { z-index: 70; }
         #body-overlay   { z-index: 80; pointer-events: none; }
 
-        /* テキスト表示 */
+        /* テキスト表示（基本：タイトル用） */
         .info-text {
             position: absolute; z-index: 40; color: var(--lcd-blue);
             text-shadow: 0 0 10px rgba(31, 118, 174, 0.8);
@@ -35,6 +35,69 @@
             font-family: 'DotGothic16', sans-serif; 
             font-weight: normal; 
             transform-origin: top left; pointer-events: none; line-height: 1;
+        }
+
+/* 時間（Time）：左右の線を極太に ＋ 極限の横圧縮 */
+        #track-time {
+            font-family: 'Michroma', sans-serif;
+            color: #1d6fa3; 
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+
+            /* 左右に「1.2px」の固い影を配置して、縦線を物理的に太らせる */
+            /* 上下の影を削ることで、スッキリさせつつ横幅のボリュームを強調 */
+            text-shadow: 
+                1.6px 0 0 #1d6fa3, 
+                -1.6px 0 0 #1d6fa3,
+                0.6px 0 0 #1d6fa3,
+                -0.6px 0 0 #1d6fa3,
+                0 0 2px rgba(29, 111, 163, 0.3);
+            
+            /* 文字が太くなった分、重なりを防ぐために間隔を調整 */
+            letter-spacing: -1.4px; 
+
+            /* 横圧縮をさらに追い込み (0.65倍) */
+            /* これにより、太い線が密集して「緻密なセグメント感」が出ます */
+            transform: scaleX(0.65) scaleY(1.15);
+            
+            filter: brightness(0.95) contrast(1.2);
+        }
+
+        /* トラック番号（Num）は前回の「横にどっしり」を維持 */
+        #track-num {
+            font-family: 'Michroma', sans-serif;
+            color: #1d6fa3; 
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+
+            text-shadow: 
+                1.2px 0 0 #1d6fa3, 
+                -1.2px 0 0 #1d6fa3,
+                0 0 3px rgba(29, 111, 163, 0.3);
+            
+            letter-spacing: 1px; 
+            transform: scaleX(1.4) scaleY(1.1);
+            
+            filter: brightness(0.95) contrast(1.2);
+        }
+
+        /* トラック番号（Num）：横太 ＋ 同様のトーン調整 */
+        #track-num {
+            font-family: 'Michroma', sans-serif;
+            color: #1d6fa3; 
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+
+            text-shadow: 
+                1px 0 0 #1d6fa3, 
+                -1px 0 0 #1d6fa3,
+                0 0 3px rgba(29, 111, 163, 0.3);
+            
+            letter-spacing: 1px; 
+            transform: scaleX(1.4) scaleY(1.1);
+            
+            /* 時間側とトーンを統一 */
+            filter: brightness(0.95) contrast(1.1);
         }
 
         /* タイトルのコンテナ設定 */
@@ -67,7 +130,7 @@
         <div id="track-title" class="info-text">SELECT MUSIC</div>
     </div>
     
-    <div id="track-time"  class="info-text">00' 00"</div>
+    <div id="track-time"  class="info-text">0&nbsp;0&nbsp;'&nbsp;&nbsp;0&nbsp;0&nbsp;"</div>
     <div id="track-num"   class="info-text">00</div>
 
     <div id="startup-layer" class="layer"></div>
@@ -107,25 +170,25 @@
 
     const config = {
         "master": {"w": 850, "h": 310},
-        "body": {"x": -100, "y": 0, "w": 1069, "h": 310},
-        "screen": {"x": -100, "y": 0, "w": 1080, "h": 310},
-        "startup": {"x": -100, "y": 0, "w": 1080, "h": 310},
-        "title": {"x": 476, "y": 142, "w": 280, "h": 30},
-        "time": {"x": 659, "y": 176, "w": 101, "h": 36},
-        "num": {"x": 726, "y": 112, "w": 80, "h": 18},
+        "body": {"x": -100, "y": 0, "w": 1079, "h": 310},
+        "screen": {"x": -100, "y": 0, "w": 1090, "h": 310},
+        "startup": {"x": -100, "y": 0, "w": 1090, "h": 310},
+        "title": {"x": 486, "y": 146, "w": 280, "h": 30},
+        "time": {"x": 669, "y": 176, "w": 101, "h": 36},
+        "num": {"x": 732, "y": 112, "w": 80, "h": 18},
         "src": {"x": -55, "y": 47, "w": 80, "h": 59},
-        "list": {"x": 20, "y": 140, "w": 45, "h": 35},
+        "list": {"x": 25, "y": 140, "w": 45, "h": 35},
         "esc": {"x": -55, "y": 214, "w": 80, "h": 61},
         "up": {"x": 184, "y": 50, "w": 75, "h": 48},
         "down": {"x": 184, "y": 224, "w": 80, "h": 51},
         "left": {"x": 107, "y": 115, "w": 55, "h": 89},
         "right": {"x": 283, "y": 115, "w": 55, "h": 92},
         "center": {"x": 184, "y": 124, "w": 70, "h": 69},
-        "p1": {"x": 410, "y": 263, "w": 40, "h": 20},
-        "p2": {"x": 499, "y": 263, "w": 40, "h": 20},
-        "p3": {"x": 593, "y": 260, "w": 40, "h": 20},
-        "p4": {"x": 687, "y": 260, "w": 40, "h": 20},
-        "open": {"x": 810, "y": 260, "w": 50, "h": 20}
+        "p1": {"x": 420, "y": 263, "w": 40, "h": 20},
+        "p2": {"x": 509, "y": 263, "w": 40, "h": 20},
+        "p3": {"x": 603, "y": 260, "w": 40, "h": 20},
+        "p4": {"x": 697, "y": 260, "w": 40, "h": 20},
+        "open": {"x": 820, "y": 260, "w": 50, "h": 20}
     };
 
     const audio = new Audio();
@@ -194,20 +257,16 @@
         clearInterval(scrollInterval);
         clearTimeout(scrollTimeout);
 
-        // 表示を一旦リセット
         el.innerText = originalTitle;
         el.style.left = '0px';
 
-        // 3秒待機してから計測と移動を開始
         scrollTimeout = setTimeout(() => {
             const singleTextWidth = el.scrollWidth;
             
             if (singleTextWidth > containerWidth) {
-                const spacer = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0"; // 間隔
+                const spacer = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
                 el.innerText = originalTitle + spacer + originalTitle + spacer;
                 
-                // 正確なリセット位置を算出（テキスト1個分 + スペース分）
-                // 隠し要素を作ってスペースの幅を正確に測る
                 const temp = document.createElement('span');
                 temp.style.fontFamily = "'DotGothic16', sans-serif";
                 temp.style.fontSize = config.title.h + 'px';
@@ -222,13 +281,11 @@
 
                 scrollInterval = setInterval(() => {
                     currentPos -= 10;
-                    
-                    // 10px刻みで、リセットポイントを超えたらピタッと0に戻して再待機
                     if (Math.abs(currentPos) >= resetPoint) {
                         currentPos = 0;
                         el.style.left = '0px';
                         clearInterval(scrollInterval);
-                        startTitleScroll(); // 再度3秒待機からやり直し
+                        startTitleScroll(); 
                     } else {
                         el.style.left = currentPos + 'px';
                     }
